@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "perceptive-map-291704",
+  "private_key_id": "18b4e92b1cbd3d8cd3b835eab9acf38b3e68fd44",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCtOslGBqbDFaHw\nZ0fv3IJvdv4vjcScxoQ3Qn8u2g1DaL9wG5+ZVSPdEKSVniDm5Dfy+IBGEsr9Q3xE\nk/VQy9/I9Hn7LRSBbgRklQCxNSwF6vqOCYv4rQ3DC/d1urxzXjNTIO84doJMHGPN\nvatqxSHsWTU5Pr8cAMHulSeA2E6AbhVS4990CPDtCqw8w/VBSlcsw/HUza9MOQHP\nQBCgVX8i5rClTDnRuxhCIvz4ITtTGdVpEsHsBclFa9MpUpnQTCY3vTkYBVpo9PVz\nOJKmHWkikDSKKXpz5CPE+FpJ7Uh2idlGXIK3ASiuVnKc8lvXdMQiFFxW0Lp7ddcQ\n13od7NzbAgMBAAECggEANe67g2XGva4agPJm3zLUGUf+02db80OLHnlBh6CzyGzw\nTUMMaXysccMgusREkh4znR3pMeff8wHzypYWJlWTEsmqwJzEaZeLHpWVZZacYitK\nXrZyMbYPNs6e+LRuv6xwZk02rWmYH4InQILwv4koiqErhOsYLOu/dTxS1DaEGk+o\neecMJWRY3VZXnqPefT8aG+GtpAvHfU40eiU4RLwzd9CcOGCGU585xFKFL2cygDCe\nrr7jwUtTqYQ/ALlsG424DyMoEiBqmUiQLh+6+2/4ePKNQiLLjLcf9b21dinN78kU\n3VRj4R7NiED6Ep0uWvmF7u7XaVc7DySAVthGVUUrQQKBgQDZbgXs7/mKuHvJHudR\n4r0hNkMGUm0IrvsIJfHEgz2Ntjs6PZzGDpL2MHav9Jxr6al9vyXpzIF3+d4jidAj\nxBQmFaDrL85rnPwVSGPM4IPYv5ZFDpd3FBu+adHPhNzPsLId8SrJoquD3+jhiO2N\nXThsvdrnF2knhrTjtvhq0r+pwwKBgQDL9Yjn+KL3+aZDD3b/MjeZ5X49sVWD7ANi\nsl5GxPXqDAKV3AH5gb6fyo44acslvWlUnEE54jNnxJqTzsebeXOGuNRlur1fZLMM\nWQDsLL7nWQ06wOB7uhWfwxC4l2dxedKnoSkTZU0t4Har4f4RxnhaS+yxnpMhdIiM\nOf7QFv03CQKBgQCuGeBaygk6H+DWuY0mT3V765QdstCl3F8cNi3yWdhm6d1hFEa9\nfJwGz+WpnSfHbRGPpAh6vouJAyXxtP9aND6iBD2XNO+H0es0K4PmYHySiU6NO1Lj\nQdG5Vchv74ZUM7tcKGlHjZ7i+N7kAR2eTV/KCvgGhQNpZ/7eO/uMpfZcuwKBgQCa\nbTUUlmAmK2LkgZAS1x3cKzPzWBKsiQVjNDRHlxeu9xr6BpOEK+V+LSqTsh57W7el\ntY15Wziax/RWF4lwwXtkNQu0XrjFwoQCxFz7dUGx/u4SXzlY1ONMjLBbY1+SPq/t\n9gsYwWm3Y63WpIzvPnufur7jGXLDMO22Zq71NYLRqQKBgQCXb2LhbxMfDPteuCZY\n8G3L7Yka5axRwYXMrEEkg6vVi5GvrXhHL+FrE0lM5cuVMyDGimPXOrtwimL5s6PS\nircJCWHC92TR6+MrDXR9nl+w7gKHNfP8V/S0/yKUvtqOx80+SS7Ui2ZljW9QvY5N\nskRv7Jg5icwYeyfZsqKmAql7Xg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "inswgen2-ocr@perceptive-map-291704.iam.gserviceaccount.com",
+  "client_id": "107876559724612080485",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/inswgen2-ocr%40perceptive-map-291704.iam.gserviceaccount.com"
+}
