@@ -14,14 +14,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ocrWithGCP = void 0;
 const storage_1 = require("@google-cloud/storage");
+const status_1 = require("../helpers/status");
 const multer_1 = __importDefault(require("../helpers/multer"));
-const fs_1 = __importDefault(require("fs"));
-const { DocumentProcessorServiceClient, } = require("@google-cloud/documentai").v1beta3;
-const projectId = "perceptive-map-291704";
-const location = "eu";
-const processorId = "586668a2c03e20cc";
+const { DocumentUnderstandingServiceClient, } = require("@google-cloud/documentai");
+const projectId = "tesml-294814";
+const location = "us";
+const bucketName = "ocr_bucket_nsw";
 const upload = multer_1.default();
-const client = new DocumentProcessorServiceClient({
+const client = new DocumentUnderstandingServiceClient({
     keyFilename: "APIKEY.json",
 });
 const storage = new storage_1.Storage({
@@ -29,7 +29,7 @@ const storage = new storage_1.Storage({
 });
 let fullText = "";
 const ocrWithGCP = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    upload.single("meocr")(req, res, (err) => {
+    upload.single("file")(req, res, (_) => {
         const { file } = req;
         if (!file) {
             const error = new Error("Please upload a file");
@@ -37,56 +37,117 @@ const ocrWithGCP = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
         }
         const fileName = file.filename;
         const filePath = file.path;
-        doScan(filePath);
+        uploadToBucket(res, filePath, fileName);
     });
 });
 exports.ocrWithGCP = ocrWithGCP;
 const uploadToBucket = (res, filePath, fileName) => __awaiter(void 0, void 0, void 0, function* () {
-    yield storage.bucket(bucketName).upload(filePath, {});
-    const filePathGS = `${bucketName}/${fileName}`;
-    console.log({ filePathGS });
+    doOCR(res, "ocr_bucket_nsw/1612336894_1._nilai_pabean_berdasarkan_nilai_transaksi_barang_impor_bersangkutan.pdf");
 });
-const doScan = (filePath) => __awaiter(void 0, void 0, void 0, function* () {
+const doOCR = (res, filePath) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const name = `//eu-documentai.googleapis.com/v1beta3/projects/148978327527/locations/eu/processors/586668a2c03e20cc`;
-        const imageFile = yield fs_1.default.promises.readFile(filePath);
-        const encodedImage = Buffer.from(imageFile).toString("base64");
+        const parent = `projects/${projectId}/locations/${location}`;
+        const gcsInputUri = `gs://${filePath}`;
         const request = {
-            name,
-            document: {
-                content: encodedImage,
+            parent,
+            inputConfig: {
+                gcsSource: {
+                    uri: gcsInputUri,
+                },
                 mimeType: "application/pdf",
+            },
+            tableExtractionParams: {
+                enabled: true,
             },
         };
-        console.log({});
-        const [result] = yield client.processDocument({
-            name: "https://eu-documentai.googleapis.com/v1beta3/projects/148978327527/locations/eu/processors/586668a2c03e20cc:process",
-            document: {
-                content: encodedImage,
-                mimeType: "application/pdf",
-            },
-        });
+        const [result] = yield client.processDocument(request);
         console.log("jalan");
-        const { document } = result;
-        const { text } = document;
-        const getText = (textAnchor) => {
-            if (!textAnchor.textSegments || textAnchor.textSegments.length === 0) {
-                return "";
-            }
-            const startIndex = textAnchor.textSegments[0].startIndex || 0;
-            const endIndex = textAnchor.textSegments[0].endIndex;
-            return text.substring(startIndex, endIndex);
-        };
-        console.log("The document contains the following paragraphs:");
-        const [page1] = document.pages;
-        const { paragraphs } = page1;
-        for (const paragraph of paragraphs) {
-            const paragraphText = getText(paragraph.layout.textAnchor);
-            console.log(`Paragraph text:\n${paragraphText}`);
-        }
+        const { text, pages } = result;
+        fullText = text;
+        const responseJson = {};
+        const responseTable = parsingTable(pages);
+        responseJson["file_url"] = "https://storage.cloud.google.com/" + filePath;
+        responseJson["data_table"] = responseTable;
+        const responseForm = parsingForm(pages);
+        responseJson["data_form"] = responseForm;
+        const responseText = fullText.split("\n");
+        responseJson["data_text"] = responseText;
+        responseJson["raw"] = result;
+        res.status(status_1.status.success).send(responseJson);
     }
     catch (err) {
+        res.status(status_1.status.error).send(err.message);
         console.log({ err });
     }
 });
+function getText(textAnchor) {
+    var _a;
+    if (((_a = textAnchor === null || textAnchor === void 0 ? void 0 : textAnchor.textSegments) === null || _a === void 0 ? void 0 : _a.length) > 0) {
+        const startIndex = textAnchor.textSegments[0].startIndex || 0;
+        const endIndex = textAnchor.textSegments[0].endIndex;
+        return fullText.substring(startIndex, endIndex);
+    }
+    return "[NO TEXT]";
+}
+const parsingForm = (pages) => {
+    const formInPages = [];
+    let responseForm = [];
+    pages.forEach((page, pageIndex) => {
+        const { formFields } = page;
+        responseForm = [];
+        for (const field of formFields) {
+            const fieldName = getText(field.fieldName.textAnchor);
+            const fieldNameBoundinng = field.fieldName.boundingPoly;
+            const fieldValue = getText(field.fieldValue.textAnchor);
+            const fieldValueBoundinng = field.fieldValue.boundingPoly;
+            responseForm.push({
+                key: fieldName,
+                keyBoundingPoly: fieldNameBoundinng,
+                value: fieldValue,
+                valueBoundingPoly: fieldValueBoundinng,
+            });
+        }
+        formInPages[pageIndex] = responseForm;
+    });
+    console.log({ formInPages });
+    return formInPages;
+};
+const parsingTable = (pages) => {
+    const tableInPages = [];
+    let responseTable = [];
+    pages.forEach((page, pageIndex) => {
+        const tables = page.tables;
+        console.log("pageIndex", pageIndex);
+        responseTable = [];
+        tables.forEach((table, index) => {
+            const [headerRow] = table.headerRows;
+            const headerResponse = [];
+            for (const tableCell of headerRow.cells) {
+                if (tableCell.layout.textAnchor.textSegments) {
+                    const textAnchor = tableCell.layout.textAnchor;
+                    const text = getText(textAnchor);
+                    headerResponse.push(text);
+                }
+            }
+            const bodyRows = table.bodyRows;
+            const bodyResponse = [];
+            bodyRows.forEach((row) => {
+                for (const tableCell of row.cells) {
+                    if (tableCell.layout.textAnchor.textSegments) {
+                        const textAnchor = tableCell.layout.textAnchor;
+                        const text = getText(textAnchor);
+                        bodyResponse.push(text);
+                    }
+                }
+            });
+            const tableResponse = {
+                header: headerResponse,
+                body: bodyResponse,
+            };
+            responseTable[index] = tableResponse;
+        });
+        tableInPages[pageIndex] = responseTable;
+    });
+    return tableInPages;
+};
 //# sourceMappingURL=ocr-google.js.map

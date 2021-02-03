@@ -3,24 +3,25 @@
 import { Storage } from "@google-cloud/storage";
 // import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 import { NextFunction, Request, Response } from "express";
+import { status } from "../helpers/status";
 import createMulter from "../helpers/multer";
-import fs from "fs";
+// import fs from "fs";
 
 const {
-  DocumentProcessorServiceClient,
-} = require("@google-cloud/documentai").v1beta3;
+  DocumentUnderstandingServiceClient,
+} = require("@google-cloud/documentai");
 
 /**
  * TODO(developer): Uncomment these variables before running the sample.
  */
 
-const projectId = "perceptive-map-291704";
-const location = "eu"; // Format is 'us' or 'eu'
-// const bucketName = "insw-ocr-bucket";
-const processorId = "586668a2c03e20cc"; // Create processor in Cloud Console
+const projectId = "tesml-294814";
+const location = "us"; // Format is 'us' or 'eu'
+const bucketName = "ocr_bucket_nsw";
+// const processorId = "586668a2c03e20cc"; // Create processor in Cloud Console
 const upload = createMulter();
 
-const client = new DocumentProcessorServiceClient({
+const client = new DocumentUnderstandingServiceClient({
   keyFilename: "APIKEY.json",
 });
 const storage = new Storage({
@@ -34,7 +35,7 @@ export const ocrWithGCP = async (
   res: Response,
   next: NextFunction
 ) => {
-  upload.single("meocr")(req, res, (err: any) => {
+  upload.single("file")(req, res, (_: any) => {
     const { file } = req;
     if (!file) {
       const error = new Error("Please upload a file");
@@ -43,8 +44,8 @@ export const ocrWithGCP = async (
     const fileName = file.filename;
     const filePath = file.path;
     // console.log({ fileName, filePath });
-    // uploadToBucket(res, filePath, fileName);
-    doScan(filePath);
+    uploadToBucket(res, filePath, fileName);
+    // doOCR(filePath);
   });
 };
 
@@ -54,72 +55,143 @@ const uploadToBucket = async (
   fileName: string
 ) => {
   // Uploads a local file to the bucket
-  await storage.bucket(bucketName).upload(filePath, {});
-  const filePathGS = `${bucketName}/${fileName}`;
-  console.log({ filePathGS });
+  // await storage.bucket(bucketName).upload(filePath, {});
+  // const filePathGS = `${bucketName}/${fileName}`;
+  // console.log({ filePathGS });
 
-  // console.log(gcsInputUri);
-  //   generate(res, filePathGS);
+  // doOCR(res, filePathGS);
+  // untuk testing biar ga spamming data ke bycket pak khilmi
+  doOCR(
+    res,
+    "ocr_bucket_nsw/1612336894_1._nilai_pabean_berdasarkan_nilai_transaksi_barang_impor_bersangkutan.pdf"
+  );
+  // doOCR(res, "ocr_bucket_nsw/1611749371_UND26.pdf");
 };
 
-const doScan = async (filePath: string) => {
+const doOCR = async (res: Response, filePath: string) => {
   try {
-    // Configure the request for processing the PDF
-    // const name = `projects/${projectId}/locations/${location}/processors/${processorId}`;
-    // const name = `projects/148978327527/locations/us/processors/ff9482add0f72fd5`;
-    const name = `//eu-documentai.googleapis.com/v1beta3/projects/148978327527/locations/eu/processors/586668a2c03e20cc`;
-    // const name = client.processorPath(projectId, location, processorId);
-
-    // Read the file into memory.
-    const imageFile = await fs.promises.readFile(filePath);
-
-    // Convert the image data to a Buffer and base64 encode it.
-    const encodedImage = Buffer.from(imageFile).toString("base64");
+    const parent = `projects/${projectId}/locations/${location}`;
+    const gcsInputUri = `gs://${filePath}`;
 
     const request = {
-      name,
-      document: {
-        content: encodedImage,
+      parent,
+      inputConfig: {
+        gcsSource: {
+          uri: gcsInputUri,
+        },
         mimeType: "application/pdf",
       },
+      tableExtractionParams: {
+        enabled: true,
+      },
     };
-    console.log({});
 
     // Recognizes text entities in the PDF document
-    const [result] = await client.processDocument({
-      name:
-        "https://eu-documentai.googleapis.com/v1beta3/projects/148978327527/locations/eu/processors/586668a2c03e20cc:process",
-      document: {
-        content: encodedImage,
-        mimeType: "application/pdf",
-      },
-    });
+    const [result] = await client.processDocument(request);
     console.log("jalan");
 
-    const { document }: any = result;
-    const { text }: any = document;
-    const getText = (textAnchor: any) => {
-      if (!textAnchor.textSegments || textAnchor.textSegments.length === 0) {
-        return "";
-      }
+    // Get all of the document text as one big string
+    const { text, pages } = result;
 
-      // First shard in document doesn't have startIndex property
-      const startIndex = textAnchor.textSegments[0].startIndex || 0;
-      const endIndex = textAnchor.textSegments[0].endIndex;
+    fullText = text;
 
-      return text.substring(startIndex, endIndex);
-    };
+    // Process the output
+    const responseJson: any = {};
 
-    // Read the text recognition output from the processor
-    console.log("The document contains the following paragraphs:");
-    const [page1] = document.pages;
-    const { paragraphs } = page1;
+    // for table
+    const responseTable = parsingTable(pages);
+    responseJson["file_url"] = "https://storage.cloud.google.com/" + filePath;
+    responseJson["data_table"] = responseTable;
 
-    for (const paragraph of paragraphs) {
-      const paragraphText = getText(paragraph.layout.textAnchor);
-      console.log(`Paragraph text:\n${paragraphText}`);
-    }
+    //for form
+    const responseForm = parsingForm(pages);
+    responseJson["data_form"] = responseForm;
+
+    //fulltext process
+    const responseText = fullText.split("\n");
+    responseJson["data_text"] = responseText;
+    responseJson["raw"] = result;
+    res.status(status.success).send(responseJson);
   } catch (err) {
+    res.status(status.error).send(err.message);
     console.log({ err });
   }
+};
+
+function getText(textAnchor: any) {
+  if (textAnchor?.textSegments?.length > 0) {
+    const startIndex = textAnchor.textSegments[0].startIndex || 0;
+    const endIndex = textAnchor.textSegments[0].endIndex;
+    return fullText.substring(startIndex, endIndex);
+  }
+  return "[NO TEXT]";
+}
+
+const parsingForm = (pages: any) => {
+  const formInPages: any = [];
+  let responseForm = [];
+
+  pages.forEach((page: any, pageIndex: number) => {
+    const { formFields } = page;
+    responseForm = [];
+    for (const field of formFields) {
+      const fieldName = getText(field.fieldName.textAnchor);
+      const fieldNameBoundinng = field.fieldName.boundingPoly;
+      const fieldValue = getText(field.fieldValue.textAnchor);
+      const fieldValueBoundinng = field.fieldValue.boundingPoly;
+      responseForm.push({
+        key: fieldName,
+        keyBoundingPoly: fieldNameBoundinng,
+        value: fieldValue,
+        valueBoundingPoly: fieldValueBoundinng,
+      });
+    }
+    formInPages[pageIndex] = responseForm;
+  });
+  console.log({ formInPages });
+
+  return formInPages;
+};
+
+const parsingTable = (pages: any) => {
+  const tableInPages: any = [];
+  let responseTable: any = [];
+  pages.forEach((page: any, pageIndex: number) => {
+    const tables = page.tables;
+    console.log("pageIndex", pageIndex);
+    responseTable = [];
+
+    tables.forEach((table: any, index: number) => {
+      const [headerRow] = table.headerRows;
+      const headerResponse = [];
+
+      for (const tableCell of headerRow.cells) {
+        if (tableCell.layout.textAnchor.textSegments) {
+          const textAnchor = tableCell.layout.textAnchor;
+          const text = getText(textAnchor);
+          headerResponse.push(text);
+        }
+      }
+
+      const bodyRows = table.bodyRows;
+      const bodyResponse: any = [];
+      bodyRows.forEach((row: any) => {
+        for (const tableCell of row.cells) {
+          if (tableCell.layout.textAnchor.textSegments) {
+            const textAnchor = tableCell.layout.textAnchor;
+            const text = getText(textAnchor);
+            bodyResponse.push(text);
+          }
+        }
+      });
+      const tableResponse = {
+        header: headerResponse,
+        body: bodyResponse,
+      };
+      responseTable[index] = tableResponse;
+    });
+    tableInPages[pageIndex] = responseTable;
+  });
+
+  return tableInPages;
 };
