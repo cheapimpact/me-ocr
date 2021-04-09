@@ -37,7 +37,7 @@ const createMulter = (allowedTypes = [], fileSize = 4096 * 4096) => {
   });
 
   return multer({
-    fileFilter: (req, file, cb) => {
+    fileFilter: (_, file, cb) => {
       const ext = path.extname(file.originalname);
       let valid = true;
 
@@ -47,7 +47,6 @@ const createMulter = (allowedTypes = [], fileSize = 4096 * 4096) => {
             valid = false;
           }
         });
-
         if (!valid) {
           return cb(new Error("File not supported"));
         }
