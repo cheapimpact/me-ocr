@@ -2,3 +2,4 @@ node_modules
 dist
 public/uploads
 GCPKey.json
+.env

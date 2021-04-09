@@ -3,15 +3,17 @@
 import { NextFunction, Request, Response } from "express";
 import { status } from "../helpers/status";
 import createMulter from "../helpers/multer";
-import fs from "fs";
+// import fs from "fs";
+const fs = require("fs").promises;
 
 import { DocumentProcessorServiceClient } from "@google-cloud/documentai";
 
 /**
  * TODO(developer): Uncomment these variables before running the sample.
  */
-const projectId = "justaway64";
-const location = "us"; // Format is 'us' or 'eu'
+const projectId = process.env.GCP_PROJECT_ID;
+const location = process.env.GCP_PROJECT_LOCATION; // Format is 'us' or 'eu'
+console.log("process.env.GCP_PROJECT_ID", process.env.GCP_PROJECT_ID);
 // const processorId = "60260ea83758b9fa"; // Create processor in Cloud Console (OCR)
 const processorId = "d4e1081fac839298"; // Create processor in Cloud Console {FORM PARSER}
 const upload = createMulter();
@@ -32,7 +34,7 @@ export const ocrWithGCP = async (
       const error = new Error("Please upload a file");
       return next(error);
     }
-    const fileName = file.filename;
+    // const fileName = file.filename;
     const filePath = file.path;
     try {
       const resJSON = await doOCR(filePath);
@@ -50,7 +52,6 @@ const doOCR = async (filePath: string) => {
     const responseJson: any = {};
 
     // Read the file into memory.
-    const fs = require("fs").promises;
     const imageFile = await fs.readFile(filePath);
 
     // Convert the image data to a Buffer and base64 encode it.

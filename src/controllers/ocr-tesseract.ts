@@ -10,7 +10,7 @@ const upload = createMulter().single("meocr");
 export const ocrWithTesseract = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  _: NextFunction
 ) => {
   upload(req, res, (_: any) => {
     fs.readFile(`./public/uploads/${req.file.filename}`, async (err, data) => {
