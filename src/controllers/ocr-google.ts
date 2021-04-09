@@ -61,11 +61,12 @@ const uploadToBucket = async (
 
   // doOCR(res, filePathGS);
   // untuk testing biar ga spamming data ke bycket pak khilmi
-  doOCR(
-    res,
-    "ocr_bucket_nsw/1612336894_1._nilai_pabean_berdasarkan_nilai_transaksi_barang_impor_bersangkutan.pdf"
-  );
+  // doOCR(
+  //   res,
+  //   "ocr_bucket_nsw/1612336894_1._nilai_pabean_berdasarkan_nilai_transaksi_barang_impor_bersangkutan.pdf"
+  // );
   // doOCR(res, "ocr_bucket_nsw/1611749371_UND26.pdf");
+  doOCR(res, "ocr_bucket_nsw/1612406319_testfiel3.pdf");
 };
 
 const doOCR = async (res: Response, filePath: string) => {

@@ -1,5 +1,6 @@
 import express from "express";
-import { ocrWithGCP } from "../controllers/ocr-google";
+// import { ocrWithGCP } from "../controllers/ocr-google";
+import { ocrWithGCP } from "../controllers/ocr-google-v2";
 import { ocrWithTesseract } from "../controllers/ocr-tesseract";
 
 // eslint-disable-next-line new-cap
